@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.billing.domain.Item;
 import com.billing.domain.ItemCategoryEnum;
+import com.billing.domain.ItemCategoryMaster;
 import com.billing.domain.ItemizedBill;
 import com.billing.exception.CategoryNotFoundException;
 import com.billing.exception.ItemNotFoundException;
@@ -23,15 +24,21 @@ public class ItemizedBillService implements BillService {
 
   ItemizedBillMasterRepository itemizedBillMasterRepository;
 
-  Logger log =  LoggerFactory.getLogger(ItemizedBillService.class);
-  
+  Logger log = LoggerFactory.getLogger(ItemizedBillService.class);
+
   @Autowired
   public ItemizedBillService(ItemizedBillMasterRepository itemizedBillMasterRepository) {
     this.itemizedBillMasterRepository = itemizedBillMasterRepository;
   }
 
   @Autowired
-  WriteServiceFacade writeServiceFacade; 
+  WriteServiceFacade writeServiceFacade;
+
+  @Override
+  public ItemCategoryMaster getItemCategoryMaster() {
+    return itemizedBillMasterRepository.getItemizedCategoryMaster();
+  }
+
   /*
    * Generates the Itemized Bill for the passed Items list as parameter Parameter:
    * List of Items Return: Itemized Bill object
@@ -64,15 +71,13 @@ public class ItemizedBillService implements BillService {
         itemsList.add(item);
       }
     });
-    
+
     Integer totalAmount = priceList.stream().reduce(0, Integer::sum);
-    
+
     ItemizedBill bill = new ItemizedBill(itemsList, totalAmount, new Date());
     writeServiceFacade.writeBill(bill, format, path);
     return bill;
   }
-  
-  
 
   @Override
   public Map<String, ConcurrentHashMap<String, Integer>> getItemMasterMap() {

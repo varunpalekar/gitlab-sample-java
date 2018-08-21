@@ -4,26 +4,82 @@ import java.io.Serializable;
 
 public class Item implements Serializable {
   private static final long serialVersionUID = 2900865465838112985L;
-  private Long id;
   private String itemCode;
   private String itemDescription;
   private Integer itemPrice;
   private Integer quantity;
   private String itemCategory;
 
+  public static class Itembuilder {
+    private String itemCode;
+    private String itemDescription;
+    private Integer itemPrice;
+    private Integer quantity;
+    private String itemCategory;
+
+    public Itembuilder(String itemCode, Integer itemPrice) {
+      super();
+      this.itemCode = itemCode;
+      this.itemPrice = itemPrice;
+    }
+
+    public String getItemDescription() {
+      return itemDescription;
+    }
+
+    public void setItemDescription(String itemDescription) {
+      this.itemDescription = itemDescription;
+    }
+
+    public Integer getQuantity() {
+      return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+      this.quantity = quantity;
+    }
+
+    public String getItemCategory() {
+      return itemCategory;
+    }
+
+    public void setItemCategory(String itemCategory) {
+      this.itemCategory = itemCategory;
+    }
+
+    public Item buildItem() {
+      return new Item(this);
+    }
+
+    @Override
+    public String toString() {
+      return "Itembuilder [itemCode=" + itemCode + ", itemDescription=" + itemDescription + ", itemPrice=" + itemPrice
+          + ", quantity=" + quantity + ", itemCategory=" + itemCategory + "]";
+    }
+
+  }
+
+  public Item() {
+    super();
+  }
+
+  public Item(Itembuilder itembuilder) {
+    super();
+    this.itemCode = itembuilder.itemCode;
+    this.itemDescription = itembuilder.itemDescription;
+    this.itemPrice = itembuilder.itemPrice;
+    this.quantity = itembuilder.quantity;
+    this.itemCategory = itembuilder.itemCategory;
+  }
+
   public Item(final Long id, final String itemCode, final String itemDescription, final Integer itemPrice,
       final Integer quantity, String itemCategory) {
     super();
-    this.id = id;
     this.itemCode = itemCode;
     this.itemDescription = itemDescription;
     this.itemPrice = itemPrice;
     this.quantity = quantity;
     this.itemCategory = itemCategory;
-  }
-
-  public Long getId() {
-    return id;
   }
 
   public String getItemCode() {
@@ -70,7 +126,6 @@ public class Item implements Serializable {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((id == null) ? 0 : id.hashCode());
     result = prime * result + ((itemCategory == null) ? 0 : itemCategory.hashCode());
     result = prime * result + ((itemCode == null) ? 0 : itemCode.hashCode());
     result = prime * result + ((itemDescription == null) ? 0 : itemDescription.hashCode());
@@ -88,11 +143,6 @@ public class Item implements Serializable {
     if (getClass() != obj.getClass())
       return false;
     Item other = (Item) obj;
-    if (id == null) {
-      if (other.id != null)
-        return false;
-    } else if (!id.equals(other.id))
-      return false;
     if (itemCategory == null) {
       if (other.itemCategory != null)
         return false;
@@ -123,8 +173,8 @@ public class Item implements Serializable {
 
   @Override
   public String toString() {
-    return "Item [id=" + id + ", itemCode=" + itemCode + ", itemDescription=" + itemDescription + ", itemPrice="
-        + itemPrice + ", quantity=" + quantity + ", itemCategory=" + itemCategory + "]";
+    return "Item [itemCode=" + itemCode + ", itemDescription=" + itemDescription + ", itemPrice=" + itemPrice
+        + ", quantity=" + quantity + ", itemCategory=" + itemCategory + "]";
   }
-
+  
 }
