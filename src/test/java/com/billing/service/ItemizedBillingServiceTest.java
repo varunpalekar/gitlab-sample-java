@@ -68,7 +68,7 @@ public class ItemizedBillingServiceTest {
   public void generateItemizedBill() {
     ItemizedBill bill = itemizedBillService.generateBill(prepareItemList(),"TEXT", path);
     // Printing the output of the itemized bill here
-    log.info("bill.toString() {}",bill.toString());
+    log.info(bill.toString());
     assertThat(bill.getTotalBillAmount()).isEqualTo(35);
   }
 
