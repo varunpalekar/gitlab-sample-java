@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -25,10 +26,10 @@ import com.billing.exception.CategoryNotFoundException;
 import com.billing.exception.ItemNotFoundException;
 import com.billing.exception.UnSupportedBillFormatException;
 
-//@RunWith(SpringRunner.class)
-//@SpringBootTest
+@RunWith(SpringRunner.class)
+@SpringBootTest
 
-public class ItemizedBillingServiceTest {/*
+public class ItemizedBillingServiceTest {
 
   Logger log =  LoggerFactory.getLogger(ItemizedBillingServiceTest.class);
   
@@ -37,7 +38,8 @@ public class ItemizedBillingServiceTest {/*
   @Autowired
   BillService itemizedBillService;
   
-  String path = "/home/vg461191/Desktop/itemizedBill.txt";
+  @Value("${test.billpath}")
+  private String path;
 
   @Before
   public void init() {
@@ -114,4 +116,4 @@ public class ItemizedBillingServiceTest {/*
     return itemsList;
   }
 
-*/}
+}

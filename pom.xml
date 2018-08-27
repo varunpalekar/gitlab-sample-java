@@ -53,6 +53,26 @@
 			</plugin>
 		</plugins>
 	</build>
+	<profiles>
+		<profile>
+			<id>local</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<mongo-host>10.21.12.117</mongo-host>
+				<spring.data.mongodb.port>27017</spring.data.mongodb.port>
+				<spring.data.mongodb.database>itemizedBill</spring.data.mongodb.database>
+				<server.port>9002</server.port>
+			</properties>
+		</profile>
+		<profile>
+			<id>Docker</id>
+			<properties>
+				<mongo-host>mongo</mongo-host>
+			</properties>
+		</profile>
+	</profiles>
 
 
 </project>
