@@ -3,11 +3,12 @@ services:
   itemapplication:
     build:
       context: ./
-    image: item-docker-manual
+    image: item-docker
     environment:
       spring.data.mongodb.host: mongo
       spring.data.mongodb.port: 27017
       spring.data.mongodb.database: itemizedBill
+      test.billpath: ~/
       SERVER_PORT: 9002
     depends_on: 
       - mongo

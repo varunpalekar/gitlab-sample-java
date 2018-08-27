@@ -64,6 +64,7 @@
 				<spring.data.mongodb.port>27017</spring.data.mongodb.port>
 				<spring.data.mongodb.database>itemizedBill</spring.data.mongodb.database>
 				<server.port>9002</server.port>
+				<test.billpath>~/</test.billpath>
 			</properties>
 		</profile>
 		<profile>
