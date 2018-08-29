@@ -1,0 +1,258 @@
+---
+variables:
+  BUILD_DOCKER_IMAGE: maven:3.5-alpine
+  DEPLOY_DOCKER_IMAGE: nitorinfotech/maven-helm:2.10.0
+
+  BUILD_GOAL: package
+  # SONAR_URL: http://lgmu-dvcm-xci1.autodatacorp.org/sonar
+
+  PKG_CONTAINER_URI: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG"
+  PKG_PATH: "./docker/"
+  PKG_DEFAULT_TAG: "$CI_PIPELINE_ID"
+  PKG_TAGS: "($PKG_DEFAULT_TAG latest)"
+  PKG_PUSH: "y"
+
+  KUBE_DEPLOY_TIMEOUT: "1800"
+
+  QA_ENV: qa1
+  PROJECT_NAME: sample-java
+
+stages:
+  - build
+  - package
+  - qa_deploy
+  - uat_deploy
+
+include:
+  - '/.gitlab-build.yml'
+  - '/.gitlab-package.yml'
+
+# Build Stage: Use Maven to build the project artifact(s)
+# Maven profiles are project specific MAVEN_PROFILES is a comma separated string
+
+build personal:
+  except:
+    - develop
+    - master
+    - /^feature\/.*$/
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
+  variables:
+    PROJECT_VERSION: "$${project.version}-SNAPSHOT"
+    BUILD_GOAL: package
+    MAVEN_PROFILES: default
+    # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL -Dsonar.analysis.mode=preview -Dsonar.gitlab.unique_issue_per_inline=true
+  <<: *build_template
+
+build develop:
+  only:
+    - develop
+  variables:
+    PROJECT_VERSION: "$${project.version}-SNAPSHOT"
+    BUILD_GOAL: package
+    MAVEN_PROFILES: default
+    # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
+  <<: *build_template
+
+build feature:
+  only:
+    - /^feature\/.*$/
+  variables:
+    PROJECT_VERSION: "$${project.version}-$CI_COMMIT_REF_SLUG-SNAPSHOT"
+    BUILD_GOAL: package
+    MAVEN_PROFILES: default
+    # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
+  <<: *build_template
+    
+build rc:
+  only:
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
+  variables:
+    PROJECT_VERSION: "$${project.version}-RC$CI_PIPELINE_ID"
+    BUILD_GOAL: package
+    MAVEN_PROFILES: default
+    # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
+  <<: *build_template
+
+build release:
+  only:
+    - master
+  variables:
+    PROJECT_VERSION: "$${project.version}"
+    BUILD_GOAL: package
+    MAVEN_PROFILES: default
+    # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
+  <<: *build_template
+
+# Package Stage: build a Docker container for the artifact(s) built during the build stage
+package personal:
+  except:
+    - develop
+    - master
+    - /^feature\/.*$/
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
+  variables:
+    PKG_PUSH: "n"
+  <<: *package_container
+
+package develop:
+  only:
+    - develop
+    - /^feature\/.*$/
+  <<: *package_container
+
+package rc:
+  only:
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
+  variables:
+    PKG_TAGS: "($$PKG_DEFAULT_TAG $$PROJECT_VERSION-rc$$CI_PIPELINE_ID)"
+  <<: *package_container
+
+package release:
+  only:
+    - master
+  variables:
+    PKG_CONTAINER_URI: "$CI_REGISTRY_IMAGE"
+    PKG_TAGS: "($$PKG_DEFAULT_TAG $$PROJECT_VERSION)"
+  <<: *package_container
+
+# Deploy Stage: Deploy the Docker Container to QA, UAT, or PROD
+# Every Docker image is tagged with the CI_PIPELINE_ID so it can always be used as the image.tag when deploying
+.helm_init: &helm_init
+  image: $DEPLOY_DOCKER_IMAGE
+  before_script:
+    - export MAVEN_PROJECT_VERSION="$(mvn help:evaluate -Dexpression=project.version | grep -v '^\[' | grep -v 'Download')"
+    - |
+        # Use the environment to lookup the Kubernetes environment variables
+        envName=$(echo $CI_ENVIRONMENT_NAME | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+        kubeNamespace="KUBE_${envName}_NAMESPACE"
+        kubeUser="KUBE_${envName}_USERNAME"
+        kubeToken="KUBE_${envName}_TOKEN"
+        kubeCert="KUBE_${envName}_CA_PEM"
+        kubeUrl="KUBE_${envName}_URL"
+
+        # Normalize the environment specific variables
+        export KUBE_NAMESPACE=${!kubeNamespace}
+        export KUBE_USERNAME=${!kubeUser}
+        export KUBE_TOKEN=${!kubeToken}
+        export KUBE_CA_PEM=${!kubeCert}
+        export KUBE_URL=${!kubeUrl}
+        export TILLER_NAMESPACE=${!kubeNamespace}
+
+    # - helm_helper.sh
+    - export KUBE_DEPLOY_NAME=$(echo $CI_PROJECT_NAME-$CI_ENVIRONMENT_NAME | tr "." - | tr '[:upper:]' '[:lower:]')
+    - export RELEASE_NAME=$(echo $PROJECT_NAME-$MAVEN_PROJECT_VERSION | tr "/" . | tr '[:upper:]' '[:lower:]')
+    
+    - export CONTAINER_TAG="$CI_PIPELINE_ID"
+
+    # Helm initialization
+    - helm init --upgrade --service-account "$KUBE_USERNAME"
+    - kubectl rollout status -n "$TILLER_NAMESPACE" -w "deployment/tiller-deploy"
+  when: manual
+
+.helm_deploy_template: &helm_deploy_template
+  <<: *helm_init
+  script:
+    # Download and Update helm dependency charts
+    - helm dependency update charts/
+    - helm dependency build charts/
+    - |
+      echo "Using image.repository=$PKG_CONTAINER_URI image.tag=$CONTAINER_TAG"
+      set -x
+      helm upgrade "$KUBE_DEPLOY_NAME" \
+        charts -i --force --wait --timeout 1800 \
+        -f charts/helm_vars/$CI_ENVIRONMENT_NAME/values.yaml \
+        --set image.repository="$PKG_CONTAINER_URI" \
+        --set-string image.tag="$CONTAINER_TAG" \
+        --set-string labels.app=$CI_PROJECT_NAME \
+        --set-string labels.pipeline=$CI_PIPELINE_ID \
+        --set-string labels.build=$CI_JOB_ID \
+        --set labels.project=$CI_PROJECT_PATH_SLUG \
+        --set labels.branch=$CI_COMMIT_REF_SLUG \
+        --set-string labels.app_release=$RELEASE_NAME \
+        --set labels.environment=$CI_ENVIRONMENT_NAME
+
+.helm_stop_template: &helm_stop_template
+  <<: *helm_init
+  script:
+    - helm delete $KUBE_DEPLOY_NAME
+
+deploy qa:
+  only:
+    - master
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
+  stage: qa_deploy
+  environment:
+    name: $QA_ENV
+    on_stop: stop qa
+  variables:
+    CI_REGISTRY_USER: $CI_DEPLOY_USER
+    CI_REGISTRY_PASSWORD: $CI_DEPLOY_PASSWORD
+  <<: *helm_deploy_template
+
+stop qa:
+  only:
+    - master
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
+  stage: qa_deploy
+  environment:
+    name: $QA_ENV
+    action: stop
+  <<: *helm_stop_template
+
+.build_template: &build_template
+  image: $BUILD_DOCKER_IMAGE
+  stage: build
+  script:
+    - mvn --batch-mode versions:set -DnewVersion=$PROJECT_VERSION
+    - |
+      set -x
+      if [ ! -z "$MAVEN_PROFILES" ]; then
+        echo "Executing Maven build with profiles $MAVEN_PROFILES"
+        mvn --batch-mode --update-snapshots "$BUILD_GOAL" -P"$MAVEN_PROFILES"
+      else
+        echo "Executing Maven build..."
+        mvn --batch-mode --update-snapshots "$BUILD_GOAL"
+      fi
+
+      if [ ! -z "$SONAR_GOAL" ] && [ ! -z "$SONAR_URL" ]; then
+        echo "Starting Sonar step..."
+        mvn --batch-mode $SONAR_GOAL -P$MAVEN_PROFILES
+      else
+        echo "Skipping Sonar step..."
+      fi
+  artifacts:
+    paths:
+      - target/*.jar
+
+
+.package_container: &package_container
+  image: $BUILD_DOCKER_IMAGE
+
+  services:
+    - docker:dind
+
+  stage: package
+
+  before_script:
+    - export PROJECT_VERSION="$(mvn help:evaluate -Dexpression=project.version | grep -v '^\[' | grep -v 'Download')"
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+  script:
+    - mv target/ItemizedBillApplication*.jar docker/ItemizedBillApplication.jar
+    - |
+      eval tags=${PKG_TAGS}
+      echo "Building Docker container with tags ${tags[*]}"
+      docker build --pull ${tags[@]/#/--tag $PKG_CONTAINER_URI:} --build-arg pipeline="$CI_PIPELINE_ID" "$PKG_PATH"
+    - |
+      if [ "$PKG_PUSH" = "y" ]; then
+        echo "Pushing Docker container to registry..."
+        docker push "$PKG_CONTAINER_URI"
+      else
+        echo "Skipping Docker container push to registry..."
+      fi
