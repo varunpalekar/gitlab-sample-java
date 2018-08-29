@@ -62,7 +62,7 @@ build personal:
   variables:
     PROJECT_VERSION: "$${project.version}-SNAPSHOT"
     BUILD_GOAL: package
-    MAVEN_PROFILES: default
+    MAVEN_PROFILES: local
     # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL -Dsonar.analysis.mode=preview -Dsonar.gitlab.unique_issue_per_inline=true
   <<: *build_template
 
@@ -72,7 +72,7 @@ build develop:
   variables:
     PROJECT_VERSION: "$${project.version}-SNAPSHOT"
     BUILD_GOAL: package
-    MAVEN_PROFILES: default
+    MAVEN_PROFILES: local
     # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
   <<: *build_template
 
@@ -82,7 +82,7 @@ build feature:
   variables:
     PROJECT_VERSION: "$${project.version}-$CI_COMMIT_REF_SLUG-SNAPSHOT"
     BUILD_GOAL: package
-    MAVEN_PROFILES: default
+    MAVEN_PROFILES: local
     # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
   <<: *build_template
     
@@ -93,7 +93,7 @@ build rc:
   variables:
     PROJECT_VERSION: "$${project.version}-RC$CI_PIPELINE_ID"
     BUILD_GOAL: package
-    MAVEN_PROFILES: default
+    MAVEN_PROFILES: local
     # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
   <<: *build_template
 
@@ -103,7 +103,7 @@ build release:
   variables:
     PROJECT_VERSION: "$${project.version}"
     BUILD_GOAL: package
-    MAVEN_PROFILES: default
+    MAVEN_PROFILES: local
     # SONAR_GOAL: sonar:sonar -Dsonar.host.url=$SONAR_URL
   <<: *build_template
 
