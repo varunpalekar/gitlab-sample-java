@@ -17,6 +17,9 @@ variables:
   QA_ENV: qa1
   PROJECT_NAME: sample-java
 
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://localhost:2375
+
 stages:
   - build
   - package
