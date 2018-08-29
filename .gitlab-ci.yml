@@ -23,12 +23,34 @@ stages:
   - qa_deploy
   - uat_deploy
 
-include:
-  - '/.gitlab-build.yml'
-  - '/.gitlab-package.yml'
 
 # Build Stage: Use Maven to build the project artifact(s)
 # Maven profiles are project specific MAVEN_PROFILES is a comma separated string
+
+.build_template: &build_template
+  image: $BUILD_DOCKER_IMAGE
+  stage: build
+  script:
+    - mvn --batch-mode versions:set -DnewVersion=$PROJECT_VERSION
+    - |
+      set -x
+      if [ ! -z "$MAVEN_PROFILES" ]; then
+        echo "Executing Maven build with profiles $MAVEN_PROFILES"
+        mvn --batch-mode --update-snapshots "$BUILD_GOAL" -P"$MAVEN_PROFILES"
+      else
+        echo "Executing Maven build..."
+        mvn --batch-mode --update-snapshots "$BUILD_GOAL"
+      fi
+
+      if [ ! -z "$SONAR_GOAL" ] && [ ! -z "$SONAR_URL" ]; then
+        echo "Starting Sonar step..."
+        mvn --batch-mode $SONAR_GOAL -P$MAVEN_PROFILES
+      else
+        echo "Skipping Sonar step..."
+      fi
+  artifacts:
+    paths:
+      - target/*.jar
 
 build personal:
   except:
@@ -86,6 +108,32 @@ build release:
   <<: *build_template
 
 # Package Stage: build a Docker container for the artifact(s) built during the build stage
+.package_container: &package_container
+  image: $BUILD_DOCKER_IMAGE
+
+  services:
+    - docker:dind
+
+  stage: package
+
+  before_script:
+    - export PROJECT_VERSION="$(mvn help:evaluate -Dexpression=project.version | grep -v '^\[' | grep -v 'Download')"
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+  script:
+    - mv target/ItemizedBillApplication*.jar docker/ItemizedBillApplication.jar
+    - |
+      eval tags=${PKG_TAGS}
+      echo "Building Docker container with tags ${tags[*]}"
+      docker build --pull ${tags[@]/#/--tag $PKG_CONTAINER_URI:} --build-arg pipeline="$CI_PIPELINE_ID" "$PKG_PATH"
+    - |
+      if [ "$PKG_PUSH" = "y" ]; then
+        echo "Pushing Docker container to registry..."
+        docker push "$PKG_CONTAINER_URI"
+      else
+        echo "Skipping Docker container push to registry..."
+      fi
+
 package personal:
   except:
     - develop
@@ -204,55 +252,3 @@ stop qa:
     name: $QA_ENV
     action: stop
   <<: *helm_stop_template
-
-.build_template: &build_template
-  image: $BUILD_DOCKER_IMAGE
-  stage: build
-  script:
-    - mvn --batch-mode versions:set -DnewVersion=$PROJECT_VERSION
-    - |
-      set -x
-      if [ ! -z "$MAVEN_PROFILES" ]; then
-        echo "Executing Maven build with profiles $MAVEN_PROFILES"
-        mvn --batch-mode --update-snapshots "$BUILD_GOAL" -P"$MAVEN_PROFILES"
-      else
-        echo "Executing Maven build..."
-        mvn --batch-mode --update-snapshots "$BUILD_GOAL"
-      fi
-
-      if [ ! -z "$SONAR_GOAL" ] && [ ! -z "$SONAR_URL" ]; then
-        echo "Starting Sonar step..."
-        mvn --batch-mode $SONAR_GOAL -P$MAVEN_PROFILES
-      else
-        echo "Skipping Sonar step..."
-      fi
-  artifacts:
-    paths:
-      - target/*.jar
-
-
-.package_container: &package_container
-  image: $BUILD_DOCKER_IMAGE
-
-  services:
-    - docker:dind
-
-  stage: package
-
-  before_script:
-    - export PROJECT_VERSION="$(mvn help:evaluate -Dexpression=project.version | grep -v '^\[' | grep -v 'Download')"
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-
-  script:
-    - mv target/ItemizedBillApplication*.jar docker/ItemizedBillApplication.jar
-    - |
-      eval tags=${PKG_TAGS}
-      echo "Building Docker container with tags ${tags[*]}"
-      docker build --pull ${tags[@]/#/--tag $PKG_CONTAINER_URI:} --build-arg pipeline="$CI_PIPELINE_ID" "$PKG_PATH"
-    - |
-      if [ "$PKG_PUSH" = "y" ]; then
-        echo "Pushing Docker container to registry..."
-        docker push "$PKG_CONTAINER_URI"
-      else
-        echo "Skipping Docker container push to registry..."
-      fi
