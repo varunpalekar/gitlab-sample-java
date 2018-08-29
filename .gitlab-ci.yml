@@ -1,6 +1,6 @@
 ---
 variables:
-  BUILD_DOCKER_IMAGE: maven:3.5-alpine
+  BUILD_DOCKER_IMAGE: nitorinfotech/docker-maven:3.5
   DEPLOY_DOCKER_IMAGE: nitorinfotech/maven-helm:2.10.0
 
   BUILD_GOAL: package
@@ -177,6 +177,7 @@ package release:
   before_script:
     - export MAVEN_PROJECT_VERSION="$(mvn help:evaluate -Dexpression=project.version | grep -v '^\[' | grep -v 'Download')"
     - |
+        set -x
         # Use the environment to lookup the Kubernetes environment variables
         envName=$(echo $CI_ENVIRONMENT_NAME | tr '[:lower:]' '[:upper:]' | tr '-' '_')
         kubeNamespace="KUBE_${envName}_NAMESPACE"

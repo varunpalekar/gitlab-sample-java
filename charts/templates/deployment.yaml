@@ -28,6 +28,8 @@ spec:
           envFrom:
           - configMapRef:
               name: "config-{{ .Release.Name }}"
+          imagePullSecrets:
+            - name: docker-registry
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
