@@ -194,6 +194,14 @@ package release:
         export KUBE_URL=${!kubeUrl}
         export TILLER_NAMESPACE=${!kubeNamespace}
 
+        mkdir -p ~/.kube 
+        echo "$KUBE_CA_PEM" > /root/.kube/ca.crt
+        kubectl config set-cluster kube --server="$KUBE_URL" --certificate-authority=/root/.kube/ca.crt
+        kubectl config set-context kube --cluster=kube
+        kubectl config set-credentials user --token=$KUBE_TOKEN
+        kubectl config set-context kube --user=user --namespace=$KUBE_NAMESPACE
+        kubectl config use-context kube
+
     # - helm_helper.sh
     - export KUBE_DEPLOY_NAME=$(echo $CI_PROJECT_NAME-$CI_ENVIRONMENT_NAME | tr "." - | tr '[:upper:]' '[:lower:]')
     - export RELEASE_NAME=$(echo $PROJECT_NAME-$MAVEN_PROJECT_VERSION | tr "/" . | tr '[:upper:]' '[:lower:]')
