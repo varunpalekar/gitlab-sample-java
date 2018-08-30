@@ -21,6 +21,8 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: mongodb
           image: mongo:latest
@@ -31,8 +33,6 @@ spec:
           envFrom:
           - configMapRef:
               name: "config-{{ .Release.Name }}"
-          imagePullSecrets:
-            - name: regcred
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

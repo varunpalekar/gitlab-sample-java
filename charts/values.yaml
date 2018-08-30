@@ -17,11 +17,11 @@ service:
   port: 80
 
 env:
-  spring.data.mongodb.host: localhost
-  spring.data.mongodb.port: 27017
-  spring.data.mongodb.database: itemizedBill
-  test.billpath: ~/
-  SERVER_PORT: 9002
+  "spring.data.mongodb.host": localhost
+  "spring.data.mongodb.port": "27017"
+  "spring.data.mongodb.database": itemizedBill
+  "test.billpath": "/root/"
+  SERVER_PORT: "9002"
 
 ingress:
   enabled: false
@@ -30,7 +30,7 @@ ingress:
     # kubernetes.io/tls-acme: "true"
   path: /
   hosts:
-    - chart-example.local
+    - vm-hps7.nitorinfotech.in
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:

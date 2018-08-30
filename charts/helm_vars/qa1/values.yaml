@@ -1,6 +1,6 @@
 env:
-  spring.data.mongodb.host: localhost
-  spring.data.mongodb.port: 27017
-  spring.data.mongodb.database: itemizedBill
-  test.billpath: ~/
-  SERVER_PORT: 9002
+  "spring.data.mongodb.host": localhost
+  "spring.data.mongodb.port": "27017"
+  "spring.data.mongodb.database": itemizedBill
+  "test.billpath": "/root/"
+  SERVER_PORT: "9002"
