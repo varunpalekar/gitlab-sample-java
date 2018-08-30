@@ -23,7 +23,7 @@ public class ItemizedBillingServiceTest {
 
   Logger log =  LoggerFactory.getLogger(ItemizedBillingServiceTest.class);
   
-//   private Map<String, ConcurrentHashMap<String, Integer>> masterItemDataMap = new HashMap<String, ConcurrentHashMap<String, Integer>>();
+ private Map<String, ConcurrentHashMap<String, Integer>> masterItemDataMap = new HashMap<String, ConcurrentHashMap<String, Integer>>();
 
  /* @Autowired
   BillService itemizedBillService;
