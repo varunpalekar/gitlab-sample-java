@@ -39,10 +39,10 @@ stages:
       set -x
       if [ ! -z "$MAVEN_PROFILES" ]; then
         echo "Executing Maven build with profiles $MAVEN_PROFILES"
-        mvn --batch-mode --update-snapshots "$BUILD_GOAL" -P"$MAVEN_PROFILES -DtestFailureIgnore=true"
+        mvn --batch-mode --update-snapshots "$BUILD_GOAL" -P"$MAVEN_PROFILES"
       else
         echo "Executing Maven build..."
-        mvn --batch-mode --update-snapshots "$BUILD_GOAL -DtestFailureIgnore=true"
+        mvn --batch-mode --update-snapshots "$BUILD_GOAL"
       fi
 
       if [ ! -z "$SONAR_GOAL" ] && [ ! -z "$SONAR_URL" ]; then
