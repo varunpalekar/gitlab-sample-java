@@ -209,7 +209,7 @@ package release:
     - export CONTAINER_TAG="$CI_PIPELINE_ID"
 
     # Helm initialization
-    - helm init --upgrade --service-account "$KUBE_USERNAME"
+    - helm init --upgrade --service-account "$KUBE_USERNAME" --tiller-namespace "$TILLER_NAMESPACE"
     - kubectl rollout status -n "$TILLER_NAMESPACE" -w "deployment/tiller-deploy"
   when: manual
 
@@ -233,12 +233,16 @@ package release:
         --set labels.project=$CI_PROJECT_PATH_SLUG \
         --set labels.branch=$CI_COMMIT_REF_SLUG \
         --set-string labels.app_release=$RELEASE_NAME \
-        --set labels.environment=$CI_ENVIRONMENT_NAME
+        --set labels.environment=$CI_ENVIRONMENT_NAME \
+        --tiller-namespace "$TILLER_NAMESPACE" \
+        --namespace="$KUBE_NAMESPACE"
 
 .helm_stop_template: &helm_stop_template
   <<: *helm_init
   script:
-    - helm delete $KUBE_DEPLOY_NAME
+    - helm delete $KUBE_DEPLOY_NAME \
+        --tiller-namespace "$TILLER_NAMESPACE" \
+        --namespace="$KUBE_NAMESPACE"
 
 deploy qa:
   only:
