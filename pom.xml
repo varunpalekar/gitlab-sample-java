@@ -53,27 +53,18 @@
 			</plugin>
 		</plugins>
 	</build>
-	<profiles>
-		<profile>
-			<id>local</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<properties>
-				<mongo-host>10.21.12.117</mongo-host>
-				<spring.data.mongodb.port>27017</spring.data.mongodb.port>
-				<spring.data.mongodb.database>itemizedBill</spring.data.mongodb.database>
-				<server.port>9002</server.port>
-				<test.billpath>~/</test.billpath>
-			</properties>
-		</profile>
-		<profile>
-			<id>Docker</id>
-			<properties>
-				<mongo-host>mongo</mongo-host>
-			</properties>
-		</profile>
-	</profiles>
 
+    <distributionManagement>
+		<repository>
+			<id>${dist.repo.id}</id>
+			<name>${dist.repo.name}</name>
+			<url>${dist.repo.url}</url>
+		</repository>
+		<snapshotRepository>
+			<id>${dist.snap_repo.id}</id>
+			<name>${dist.snap_repo.name}</name>
+			<url>${dist.snap_repo.url}</url>
+		</snapshotRepository>
+  	</distributionManagement>
 
 </project>
