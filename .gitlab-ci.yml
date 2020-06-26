@@ -1,10 +1,10 @@
 ---
 variables:
-  BUILD_DOCKER_IMAGE: nitorinfotech/docker-maven:3.5
-  DEPLOY_DOCKER_IMAGE: nitorinfotech/maven-helm:2.10.0
+  BUILD_DOCKER_IMAGE: docker-maven:3.5
+  DEPLOY_DOCKER_IMAGE: maven-helm:2.10.0
 
   BUILD_GOAL: package
-  # SONAR_URL: http://lgmu-dvcm-xci1.autodatacorp.org/sonar
+  SONAR_URL: http://sonarqube.org
 
   PKG_CONTAINER_URI: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG"
   PKG_PATH: "./docker/"
